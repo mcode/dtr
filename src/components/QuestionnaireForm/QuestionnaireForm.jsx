@@ -227,8 +227,14 @@ export default class QuestionnaireForm extends Component {
 
       let count = 0;
 
-      partialResponses.entry.forEach(r => {
-        if (r.resource.questionnaire.includes(this.props.qform.id)) {
+      partialResponses.entry.forEach(bundleEntry => {
+        let questionnaireId = null;
+        if(bundleEntry.resource.contained) {
+          questionnaireId = bundleEntry.resource?.contained[0]?.id;
+        }
+        const questionaireIdUrl = bundleEntry.resource.questionnaire;
+
+        if (this.props.qform.id === questionnaireId || questionaireIdUrl.includes(this.props.qform.id)) {
           count = count + 1;
           // add the option to the popupOptions
           let date = new Date(bundleEntry.resource.authored);
@@ -906,7 +912,7 @@ export default class QuestionnaireForm extends Component {
     };
     this.addAuthorToResponse(qr, this.getPractitioner());
 
-    qr.questionnaire = this.appContext.questionnaire;
+    qr.questionnaire = this.appContext.questionnaire?this.appContext.questionnaire:this.props.response.questionnaire;
     console.log("GetQuestionnaireResponse final QuestionnaireResponse: ", qr);
 
     const request = this.props.deviceRequest;
