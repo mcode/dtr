@@ -56,9 +56,8 @@ export default class QuestionnaireForm extends Component {
     this.getDisplayButtons = this.getDisplayButtons.bind(this);
     this.isAdaptiveFormWithoutItem = this.isAdaptiveFormWithoutItem.bind(this);
     this.isAdaptiveFormWithItem = this.isAdaptiveFormWithItem.bind(this);
+    this.loadPreviousForm = this.loadPreviousForm.bind(this);
   }
-
-
 
   componentWillMount() {
     // search for any partially completed QuestionnaireResponses
@@ -73,15 +72,8 @@ export default class QuestionnaireForm extends Component {
         savedResponse: mergedResponse
       })
     } else {
-      this.smart.request(this.getRetrieveSaveQuestionnaireUrl() +
-        "&status=in-progress" +
-        "&subject=" + this.getPatient()).then((result) => {
-          this.popupClear("Would you like to continue an in-process questionnaire?", "Cancel", false);
-          this.processSavedQuestionnaireResponses(result, false);
-        }, ((result) => {
-          this.popupClear("Error: failed to load in-process questionnaires", "OK", true);
-          this.popupLaunch();
-        })).catch(console.error);
+
+      this.loadPreviousForm();
 
       // If not using saved QuestionnaireResponse, create a new one
       let newResponse = {
@@ -177,7 +169,7 @@ export default class QuestionnaireForm extends Component {
     // read configuration 
     let updateDate = new Date();
     updateDate.setDate(updateDate.getDate() - ConfigData.QUESTIONNAIRE_EXPIRATION_DAYS);
-    return "QuestionnaireResponse?" + "_lastUpdated=gt" + updateDate.toISOString().split('T')[0];
+    return `QuestionnaireResponse?_lastUpdated=gt${updateDate.toISOString().split('T')[0]}&status=in-progress`
   }
 
   loadPreviousForm() {
@@ -187,7 +179,7 @@ export default class QuestionnaireForm extends Component {
         this.popupClear("Would you like to load a previous form?", "Cancel", false);
         this.processSavedQuestionnaireResponses(result, true);
       }, ((result) => {
-        this.popupClear("Error: failed to load previous forms", "OK", true);
+        this.popupClear("Error: failed to load previous in-progress forms", "OK", true);
         this.popupLaunch();
       })).catch(console.error);
   }
@@ -238,12 +230,12 @@ export default class QuestionnaireForm extends Component {
         if (r.resource.questionnaire.includes(this.props.qform.id)) {
           count = count + 1;
           // add the option to the popupOptions
-          let date = new Date(r.resource.authored);
-          let option = date.toLocaleDateString(undefined, options) + " (" + r.resource.status + ")";
+          let date = new Date(bundleEntry.resource.authored);
+          let option = date.toLocaleDateString(undefined, options) + " (" + bundleEntry.resource.status + ")";
           this.setState({
             popupOptions: [...this.state.popupOptions, option]
           });
-          this.partialForms[option] = r.resource;
+          this.partialForms[option] = bundleEntry.resource;
         }
       });
       console.log(this.state.popupOptions);
