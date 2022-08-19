@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import "./App.css";
 import cqlfhir from "cql-exec-fhir";
 import executeElm from "./elmExecutor/executeElm";
-import fetchArtifacts from "./util/fetchArtifacts";
+import {fetchArtifacts, fetchArtifactsOperation, fetchFromQuestionnaireResponse, searchByOrder} from "./util/fetchArtifacts";
 import fetchFhirVersion from "./util/fetchFhirVersion";
 import { buildFhirUrl } from "./util/util";
 import PriorAuth from "./components/PriorAuth/PriorAuth";
@@ -39,7 +39,7 @@ export default class App extends Component {
       priorAuthClaim: null,
       specialtyRxBundle: null,
       cqlPrepopulationResults: null,
-      deviceRequest: null,
+      orderResource: null,
       bundle: null,
       filter: true,
       filterChecked: true,
@@ -73,11 +73,13 @@ export default class App extends Component {
     this.standaloneLaunch = this.standaloneLaunch.bind(this);
     this.filter = this.filter.bind(this);
     this.onFilterCheckboxRefChange = this.onFilterCheckboxRefChange.bind(this);
+    this.fetchResourcesAndExecuteCql = this.fetchResourcesAndExecuteCql.bind(this);
   }
 
   componentDidMount() {
       if(!this.props.standalone) {
         this.ehrLaunch(false);
+        // fetchArtifactsOperation(this.appContext, this.smart, this.consoleLog);
       }
   }
 
@@ -102,63 +104,84 @@ export default class App extends Component {
     })
   }
 
+
   ehrLaunch(isContainedQuestionnaire, questionnaire) {
-    // Temporary indication before full supports for relaunch is implemented
-    if(!this.appContext.request) {
-      alert("Supports for relaunch will be added in the near future!");
-      this.consoleLog("Supports for relaunch will be added in the near future!", "errorClass");
-      return;
+    let acOrder = this.appContext.order;
+    let acCoverage = this.appContext.coverage;
+    let acQuestionnaire = this.appContext.questionnaire;
+    let acResponse = this.appContext.response;
+    if(acOrder && acCoverage && !acQuestionnaire && !acResponse) {
+      // TODO: There's an additional case where you could launch
+      // with just the order/coverage by invoking the operation
+      // but I think the endpoint extension on coverage which
+      // would facilitate that is going away in ballot.
+      searchByOrder(acOrder, this.smart).then((res) => {
+        // TODO: Don't know how to deal with multiple QRs
+        // Let user pick with a UI?  Force orders to 
+        // uniquely identify QRs?  
+        // for now just pick the first one
+        acResponse = res[0].resource;
+        acQuestionnaire = acResponse.questionnaire;
+        this.setState({response: acResponse});
+        this.fetchResourcesAndExecuteCql(acOrder, acCoverage, acQuestionnaire);
+      });
+    } else if(acResponse) {
+      // start relaunch
+      // TODO: could potentially pass order to this function and avoid 
+      // needing to search the QR context extension for it
+      // which would also support QRs without the extension.
+      fetchFromQuestionnaireResponse(acResponse, this.smart).then((relaunchContext) => {
+        this.setState({response: relaunchContext.response})
+        this.fetchResourcesAndExecuteCql(relaunchContext.order, relaunchContext.coverage, relaunchContext.questionnaire);
+      });
+    } else if(acQuestionnaire && acOrder && acCoverage){
+      this.consoleLog("fetching artifacts", "infoClass");
+      this.setState({
+        isFetchingArtifacts: true
+      })
+      const reloadQuestionnaire = questionnaire !== undefined;
+      this.setState({reloadQuestionnaire});
+      this.fetchResourcesAndExecuteCql(acOrder, acCoverage, acQuestionnaire);
+    } else {
+      alert("invalid app context")
     }
-    const deviceRequest = JSON.parse(this.appContext.request.replace(/\\/g,""));
-    this.consoleLog("fetching artifacts", "infoClass");
-    this.setState({
-      isFetchingArtifacts: true
-    })
-    const reloadQuestionnaire = questionnaire !== undefined;
-  
+  }
+
+  fetchResourcesAndExecuteCql(order, coverage, questionnaire) {
     fetchFhirVersion(this.props.smart.state.serverUrl)
     .then(fhirVersion => {
       this.fhirVersion = fhirVersion;
 
-      fetchArtifacts(
-        this.props.FHIR_PREFIX,
-        this.props.FILE_PREFIX,
-        !isContainedQuestionnaire ? this.appContext.template : questionnaire,
-        this.fhirVersion,
-        this.smart,
-        this.consoleLog,
-        isContainedQuestionnaire
-      )
+      fetchArtifactsOperation(order, coverage, questionnaire, this.smart, this.consoleLog)
         .then(artifacts => {
           console.log("fetched needed artifacts:", artifacts);
-
+          const orderResource = artifacts.order;
           let fhirWrapper = this.getFhirWrapper(this.fhirVersion);
-
           this.setState({ questionnaire: artifacts.questionnaire });
-          this.setState({ deviceRequest: deviceRequest });
+          this.setState({ orderResource: orderResource });
           this.setState({ isAdaptiveFormWithoutExtension: artifacts.questionnaire.meta && artifacts.questionnaire.meta.profile && artifacts.questionnaire.meta.profile.includes("http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-adapt") && (artifacts.questionnaire.extension === undefined || !artifacts.questionnaire.extension.includes(e => e.url === "http://hl7.org/fhir/StructureDefinition/cqf-library")) });
           this.setState({ });
           // execute for each main library
           return Promise.all(
             artifacts.mainLibraryElms.map(mainLibraryElm => {
               let parameterObj;
-              if (deviceRequest.resourceType === "DeviceRequest") {
+              if (orderResource.resourceType === "DeviceRequest") {
                 parameterObj = {
-                  device_request: fhirWrapper.wrap(deviceRequest)
+                  device_request: fhirWrapper.wrap(orderResource)
                 };
               } else if (
-                deviceRequest.resourceType === "ServiceRequest"
+                orderResource.resourceType === "ServiceRequest"
               ) {
                 parameterObj = {
-                  service_request: fhirWrapper.wrap(deviceRequest)
+                  service_request: fhirWrapper.wrap(orderResource)
                 };
-              } else if (deviceRequest.resourceType === "MedicationRequest") {
+              } else if (orderResource.resourceType === "MedicationRequest") {
                 parameterObj = {
-                  medication_request: fhirWrapper.wrap(deviceRequest)
+                  medication_request: fhirWrapper.wrap(orderResource)
                 };
-              } else if (deviceRequest.resourceType === "MedicationDispense") {
+              } else if (orderResource.resourceType === "MedicationDispense") {
                 parameterObj = {
-                  medication_dispense: fhirWrapper.wrap(deviceRequest)
+                  medication_dispense: fhirWrapper.wrap(orderResource)
                 };
               }
 
@@ -194,7 +217,7 @@ export default class App extends Component {
               return executeElm(
                 this.smart,
                 this.fhirVersion,
-                deviceRequest,
+                orderResource,
                 executionInputs,
                 this.consoleLog
               );
@@ -247,13 +270,11 @@ export default class App extends Component {
           this.setState({ 
             bundle: fullBundle,
             cqlPrepopulationResults: allLibrariesResults, 
-            isFetchingArtifacts: false,
-            reloadQuestionnaire
+            isFetchingArtifacts: false
           });
         });
     });
   }
-
   getFhirWrapper(fhirVersion) {
     if (fhirVersion == "r4") {
       return cqlfhir.FHIRWrapper.FHIRv400();
@@ -615,8 +636,9 @@ export default class App extends Component {
           ) : (
             <QuestionnaireForm
               qform={this.state.questionnaire}
+              appContext = {this.appContext}
               cqlPrepopulationResults={this.state.cqlPrepopulationResults}
-              deviceRequest={this.state.deviceRequest}
+              deviceRequest={this.state.orderResource}
               bundle={this.state.bundle}
               patientId={this.patientId}
               standalone={this.props.standalone}
@@ -627,8 +649,6 @@ export default class App extends Component {
               setSpecialtyRxBundle={this.setSpecialtyRxBundle.bind(this)}
               fhirVersion={this.fhirVersion.toUpperCase()}
               smart={this.smart}
-              FHIR_PREFIX={this.props.FHIR_PREFIX}
-              FILE_PATH={this.props.FILE_PREFIX}
               renderButtons={this.renderButtons}
               filterFieldsFn={this.filter}
               filterChecked={this.state.filter}

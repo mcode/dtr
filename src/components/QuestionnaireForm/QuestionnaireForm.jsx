@@ -40,6 +40,7 @@ export default class QuestionnaireForm extends Component {
     this.patientId = props.patientId;
     this.fhirVersion = props.fhirVersion;
     this.FHIR_PREFIX = props.FHIR_PREFIX;
+    this.appContext = props.appContext;
     this.partialForms = {};
     this.handleGtable = this.handleGtable.bind(this);
     this.getLibraryPrepopulationResult = this.getLibraryPrepopulationResult.bind(this);
@@ -61,7 +62,7 @@ export default class QuestionnaireForm extends Component {
 
   componentWillMount() {
     // search for any partially completed QuestionnaireResponses
-    if (this.props.standalone) {
+    if (this.props.response) {
       const response = this.props.response;
       const items = this.props.qform.item;
       const parentItems = [];
@@ -226,8 +227,14 @@ export default class QuestionnaireForm extends Component {
 
       let count = 0;
 
-      partialResponses.entry.forEach(r => {
-        if (r.resource.questionnaire.includes(this.props.qform.id)) {
+      partialResponses.entry.forEach(bundleEntry => {
+        let questionnaireId = null;
+        if(bundleEntry.resource.contained) {
+          questionnaireId = bundleEntry.resource?.contained[0]?.id;
+        }
+        const questionaireIdUrl = bundleEntry.resource.questionnaire;
+
+        if (this.props.qform.id === questionnaireId || questionaireIdUrl.includes(this.props.qform.id)) {
           count = count + 1;
           // add the option to the popupOptions
           let date = new Date(bundleEntry.resource.authored);
@@ -905,7 +912,7 @@ export default class QuestionnaireForm extends Component {
     };
     this.addAuthorToResponse(qr, this.getPractitioner());
 
-    qr.questionnaire = `${this.FHIR_PREFIX}${this.fhirVersion}/Questionnaire/${this.props.qform.id}`;
+    qr.questionnaire = this.appContext.questionnaire?this.appContext.questionnaire:this.props.response.questionnaire;
     console.log("GetQuestionnaireResponse final QuestionnaireResponse: ", qr);
 
     const request = this.props.deviceRequest;
