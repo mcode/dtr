@@ -92,6 +92,7 @@ export default class App extends Component {
         .then(questionnaire => {
             this.setState({ questionnaire: questionnaire });
             this.setState({ response: response});
+            this.setState({ isFetchingArtifacts: false});
         });
       });
   }
@@ -109,11 +110,18 @@ export default class App extends Component {
     let acCoverage = this.appContext.coverage;
     let acQuestionnaire = this.appContext.questionnaire;
     let acResponse = this.appContext.response;
-    if(acOrder && acCoverage && !acQuestionnaire && !acResponse) {
-      // TODO: There's an additional case where you could launch
-      // with just the order/coverage by invoking the operation
-      // but I think the endpoint extension on coverage which
-      // would facilitate that is going away in ballot.
+    if(isContainedQuestionnaire && questionnaire) {
+      // TODO: This is a workaround for getting adaptive forms to work
+      // in its current form, adaptive forms do not operate with the 
+      // package operation
+      const reloadQuestionnaire = questionnaire !== undefined;
+      this.setState({
+        isFetchingArtifacts: true,
+        reloadQuestionnaire
+      })
+      this.fetchResourcesAndExecuteCql(acOrder, acCoverage, acQuestionnaire, questionnaire);
+
+    } else if(acOrder && acCoverage && !acQuestionnaire && !acResponse) {
       searchByOrder(acOrder, this.smart).then((res) => {
         // TODO: Don't know how to deal with multiple QRs
         // Let user pick with a UI?  Force orders to 
@@ -146,12 +154,12 @@ export default class App extends Component {
     }
   }
 
-  fetchResourcesAndExecuteCql(order, coverage, questionnaire) {
+  fetchResourcesAndExecuteCql(order, coverage, questionnaire, containedQuestionnaire) {
     fetchFhirVersion(this.props.smart.state.serverUrl)
     .then(fhirVersion => {
       this.fhirVersion = fhirVersion;
 
-      fetchArtifactsOperation(order, coverage, questionnaire, this.smart, this.consoleLog)
+      fetchArtifactsOperation(order, coverage, questionnaire, this.smart, this.consoleLog, containedQuestionnaire)
         .then(artifacts => {
           console.log("fetched needed artifacts:", artifacts);
           const orderResource = artifacts.order;
