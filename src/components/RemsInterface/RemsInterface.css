@@ -2,8 +2,8 @@ body {
     margin: 0;
     padding: 0;
     font-family: sans-serif;
-  
   }
+
   .left-form { 
     width: 48%;
     float: left;
@@ -21,7 +21,7 @@ body {
   }
 
   .resource-entry{
-    clear: both;
+    /* clear: both; */
     border-left: 4px solid #ffcccb;
     padding: 5px;
     border-bottom: 1px solid grey;
@@ -45,12 +45,10 @@ body {
     background-color: #ededed;
   }
 
-
 .submit-btn {
     float: right;
     margin-top: 6px;
   }
-
 
 .submit-btn:hover{
     border-width:1px 3px 1px 1px;
@@ -71,6 +69,7 @@ body {
   cursor: pointer;
   margin-left: 15px;
 }
+
 .refresh{
   cursor: pointer;
   margin-left: 15px;
@@ -84,6 +83,7 @@ body {
   overflow-y: scroll;
   height:500px;
 }
+
 .jsonData{
   line-height:16px;
   font-family: 'Courier New', Courier, monospace;
@@ -99,6 +99,7 @@ body {
 .elementBody{
   color:#adadad;
 }
+
 .elementKey{
   color:#343434
 }
@@ -112,7 +113,6 @@ body {
   }
 }
 
-
 /*  ETASU styling */
 .resource-entry-hover{
   display:none;
@@ -121,9 +121,9 @@ body {
 }
 
 .etasu-container{
-  padding-bottom:10px;
-  padding-left: 10px;
-  padding-right:10px;
+  padding-bottom:40px;
+  padding-left: 20px;
+  padding-right:20px;
 }
 
 .resource-entry-text{
@@ -132,11 +132,10 @@ body {
   width:75%;
 }
 
-.etasu-container:hover > .resource-entry-hover{
+.resource-entry:hover > .resource-entry-hover{
   clear: both;
   display: block !important;
 }
-
 
 .resource-entry-icon{
   width:25%;
