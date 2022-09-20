@@ -56,21 +56,17 @@ export default class RemsInterface extends Component {
       console.log(metReq);
       return (
         <div>
-          <div className={"resource-entry"}>
-            <div className={"etasu-container"}>
+          <div className={"resource-entry etasu-container"}>
               <div className={"resource-entry-text"}  >{metReq.requirement.name}</div>
               <div className={"resource-entry-icon"}>{metReq.completed ? "✅"  : "❌"}</div>
               <div className={"resource-entry-hover"}>{metReq.requirement.description}</div>
-            </div>
           </div>
           {
             metReq.childMetRequirements.map(subMetReq =>    
-              <div className={"resource-entry resource-child"}>
-                <div className={"etasu-container"}>
+              <div className={"resource-entry resource-child etasu-container"}>
                   <div className={"resource-entry-text"}>{subMetReq.requirement.name}</div>
                   <div className={"resource-entry-icon"}>{subMetReq.completed ? "✅" : "❌"}</div>
                   <div className={"resource-entry-hover"}>{subMetReq.requirement.description}</div>
-                </div>
               </div>
             )
           }
@@ -203,12 +199,14 @@ export default class RemsInterface extends Component {
           </Paper>
           {this.state.viewResponse ?
             <div className="bundle-view">
+              <br></br>
               <h3>ETASU</h3>
               {this.unfurlJson(this.state.remsAdminResponse?.data, 0)}
             </div>
             :
             ""}
           {this.state.viewBundle ? <div className="bundle-view">
+          <br></br>
           <h3>Bundle</h3>
             {this.renderBundle(this.props.specialtyRxBundle)}
           </div> : ""}
