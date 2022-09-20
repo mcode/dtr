@@ -203,11 +203,13 @@ export default class RemsInterface extends Component {
           </Paper>
           {this.state.viewResponse ?
             <div className="bundle-view">
+              <h3>ETASU</h3>
               {this.unfurlJson(this.state.remsAdminResponse?.data, 0)}
             </div>
             :
             ""}
           {this.state.viewBundle ? <div className="bundle-view">
+          <h3>Bundle</h3>
             {this.renderBundle(this.props.specialtyRxBundle)}
           </div> : ""}
 
