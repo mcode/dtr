@@ -57,39 +57,39 @@ export default class RemsInterface extends Component {
       return (
         <div>
           <div className={"resource-entry etasu-container"}>
-              <div className={"resource-entry-text"}  >{metReq.requirement.name}</div>
+            <div className={"resource-entry-text"}  >{metReq.requirement.name}</div>
               <div className={"resource-entry-icon"}>{metReq.completed ? "✅"  : "❌"}</div>
-              <div className={"resource-entry-hover"}>{metReq.requirement.description}</div>
+            <div className={"resource-entry-hover"}>{metReq.requirement.description}</div>
           </div>
           {
-            metReq.childMetRequirements.map(subMetReq =>    
+            metReq.childMetRequirements.map(subMetReq =>
               <div className={"resource-entry resource-child etasu-container"}>
-                  <div className={"resource-entry-text"}>{subMetReq.requirement.name}</div>
-                  <div className={"resource-entry-icon"}>{subMetReq.completed ? "✅" : "❌"}</div>
-                  <div className={"resource-entry-hover"}>{subMetReq.requirement.description}</div>
+                <div className={"resource-entry-text"}>{subMetReq.requirement.name}</div>
+                <div className={"resource-entry-icon"}>{subMetReq.completed ? "✅" : "❌"}</div>
+                <div className={"resource-entry-hover"}>{subMetReq.requirement.description}</div>
               </div>
             )
           }
         </div>
       )
     });
-      
-    }
-    // if (jsonData) {
-    //   return Object.keys(jsonData).map(element => {
-    //     console.log(element);
-    //     return (
-    //       // <div id={elementKey} className="jsonData" key={element} style={divStyle}>
-    //       //   <span className="elementKey">{element}</span>: <span className="elementBody">{jsonData[element] === null ? "null" : typeof jsonData[element] === "object" ? this.unfurlJson(jsonData[element], level + 1) : jsonData[element]}</span>
-    //       // </div>
-    //       <div>
-    //         <div className={"resource-entry"}>
-    //             <div>TEST</div>
-    //         </div>
-    //       </div>
-    //     )
-    //   });
-    // }
+
+  }
+  // if (jsonData) {
+  //   return Object.keys(jsonData).map(element => {
+  //     console.log(element);
+  //     return (
+  //       // <div id={elementKey} className="jsonData" key={element} style={divStyle}>
+  //       //   <span className="elementKey">{element}</span>: <span className="elementBody">{jsonData[element] === null ? "null" : typeof jsonData[element] === "object" ? this.unfurlJson(jsonData[element], level + 1) : jsonData[element]}</span>
+  //       // </div>
+  //       <div>
+  //         <div className={"resource-entry"}>
+  //             <div>TEST</div>
+  //         </div>
+  //       </div>
+  //     )
+  //   });
+  // }
 
   // }
 
@@ -169,84 +169,120 @@ export default class RemsInterface extends Component {
       colorPis = "#0275d8"
     }
 
+    // Checking if REMS Request (pt enrollment) || Met Requirments (prescriber Form)
+    let hasRemsCase = this.state.remsAdminResponse?.data?.case_number ? true : false;
+
     return (
       <div>
-        <div className="container left-form">
-          <h1>REMS Admin Status</h1>
-          <Paper style={{ paddingBottom: "5px" }}>
-            <div className="status-icon" style={{ backgroundColor: color }}></div>
-            <div className="bundle-entry">
-              Case Number : {this.state.remsAdminResponse?.data?.case_number || "N/A"}
-            </div>
-            <div className="bundle-entry">
-              Status: {this.state.remsAdminResponse?.data?.status}
-            </div>
-            <div className="bundle-entry">
-              <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
-              <Button variant="contained" onClick={this.toggleResponse}>View ETASU</Button>
+        {hasRemsCase ?
+          <div>
+            <div className="container left-form">
+              <h1>REMS Admin Status</h1>
+              <Paper style={{ paddingBottom: "5px" }}>
+                <div className="status-icon" style={{ backgroundColor: color }}></div>
+                <div className="bundle-entry">
+                  Case Number : {this.state.remsAdminResponse?.data?.case_number || "N/A"}
+                </div>
+                <div className="bundle-entry">
+                  Status: {this.state.remsAdminResponse?.data?.status}
+                </div>
+                <div className="bundle-entry">
+                  <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
+                  <Button variant="contained" onClick={this.toggleResponse}>View ETASU</Button>
 
-              {this.state.remsAdminResponse?.data?.case_number ?
-                <AutorenewIcon
-                  className={this.state.spin === true ? "refresh" : "renew-icon"}
-                  onClick={this.refreshBundle}
-                  onAnimationEnd={() => this.setState({ spin: false })}
-                />
-                : ""
-              }
+                  {this.state.remsAdminResponse?.data?.case_number ?
+                    <AutorenewIcon
+                      className={this.state.spin === true ? "refresh" : "renew-icon"}
+                      onClick={this.refreshBundle}
+                      onAnimationEnd={() => this.setState({ spin: false })}
+                    />
+                    : ""
+                  }
 
-            </div>
+                </div>
 
-          </Paper>
-          {this.state.viewResponse ?
-            <div className="bundle-view">
-              <br></br>
-              <h3>ETASU</h3>
-              {this.unfurlJson(this.state.remsAdminResponse?.data, 0)}
-            </div>
-            :
-            ""}
-          {this.state.viewBundle ? <div className="bundle-view">
-          <br></br>
-          <h3>Bundle</h3>
-            {this.renderBundle(this.props.specialtyRxBundle)}
-          </div> : ""}
-
-
-
-        </div>
-
-        <div className="right-form">
-          <h1>Pharmacy Status</h1>
-          <Paper style={{ paddingBottom: "5px" }}>
-            <div className="status-icon" style={{ backgroundColor: colorPis }}></div>
-            <div className="bundle-entry">
-              ID : {this.state.response?.data?.doctorOrder?._id || "N/A"}
-            </div>
-            <div className="bundle-entry">
-              Status: {this.state.response?.data?.doctorOrder?.dispenseStatus}
-            </div>
-            <div className="bundle-entry">
-              <Button variant="contained" onClick={this.togglePisBundle}>View Bundle</Button>
-              {this.state.response?.data?.doctorOrder?._id ?
-                <AutorenewIcon
-                  className={this.state.spinPis === true ? "refresh" : "renew-icon"}
-                  onClick={this.refreshPisBundle}
-                  onAnimationEnd={() => this.setState({ spinPis: false })}
-                />
-                : ""
-              }
+              </Paper>
+              {this.state.viewResponse ?
+                <div className="bundle-view">
+                  <br></br>
+                  <h3>ETASU</h3>
+                  {this.unfurlJson(this.state.remsAdminResponse?.data, 0)}
+                </div>
+                :
+                ""}
+              {this.state.viewBundle ? <div className="bundle-view">
+                <br></br>
+                <h3>Bundle</h3>
+                {this.renderBundle(this.props.specialtyRxBundle)}
+              </div> : ""}
 
             </div>
 
-          </Paper>
-          {this.state.viewPisBundle ? <div className="bundle-view">
-            <br></br>
-            <h3>Bundle</h3>
-            {this.renderBundle(this.props.specialtyRxBundle)}
-          </div> : ""}
-        </div>
-        {/* <button className="submit-btn" onClick={() => { this.sendRemsMessage() }}>Submit</button> */}
+            <div className="right-form">
+              <h1>Pharmacy Status</h1>
+              <Paper style={{ paddingBottom: "5px" }}>
+                <div className="status-icon" style={{ backgroundColor: colorPis }}></div>
+                <div className="bundle-entry">
+                  ID : {this.state.response?.data?.doctorOrder?._id || "N/A"}
+                </div>
+                <div className="bundle-entry">
+                  Status: {this.state.response?.data?.doctorOrder?.dispenseStatus}
+                </div>
+                <div className="bundle-entry">
+                  <Button variant="contained" onClick={this.togglePisBundle}>View Bundle</Button>
+                  {this.state.response?.data?.doctorOrder?._id ?
+                    <AutorenewIcon
+                      className={this.state.spinPis === true ? "refresh" : "renew-icon"}
+                      onClick={this.refreshPisBundle}
+                      onAnimationEnd={() => this.setState({ spinPis: false })}
+                    />
+                    : ""
+                  }
 
+                </div>
+
+              </Paper>
+              {this.state.viewPisBundle ? <div className="bundle-view">
+                <br></br>
+                <h3>Bundle</h3>
+                {this.renderBundle(this.props.specialtyRxBundle)}
+              </div> : ""}
+            </div>
+            {/* <button className="submit-btn" onClick={() => { this.sendRemsMessage() }}>Submit</button> */}
+          </div>
+          :
+          <div>
+            <div className="container left-form">
+              <h1>Prescriber Document Status</h1>
+              <Paper style={{ paddingBottom: "5px" }}>
+                <div className="status-icon" style={{ backgroundColor: "#5cb85c" }}></div>
+                <div className="bundle-entry">
+                  Status: Documents successfully submitted
+                </div>
+                <div className="bundle-entry">
+                  <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
+
+                  {this.state.remsAdminResponse?.data?.case_number ?
+                    <AutorenewIcon
+                      className={this.state.spin === true ? "refresh" : "renew-icon"}
+                      onClick={this.refreshBundle}
+                      onAnimationEnd={() => this.setState({ spin: false })}
+                    />
+                    : ""
+                  }
+
+                </div>
+
+              </Paper>
+              {this.state.viewBundle ? <div className="bundle-view">
+                <br></br>
+                <h3>Bundle</h3>
+                {this.renderBundle(this.props.specialtyRxBundle)}
+              </div> : ""}
+
+            </div>
+          </div>
+        }
       </div>
     )
   }
