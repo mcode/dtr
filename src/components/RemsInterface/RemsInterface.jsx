@@ -75,23 +75,6 @@ export default class RemsInterface extends Component {
     });
 
   }
-  // if (jsonData) {
-  //   return Object.keys(jsonData).map(element => {
-  //     console.log(element);
-  //     return (
-  //       // <div id={elementKey} className="jsonData" key={element} style={divStyle}>
-  //       //   <span className="elementKey">{element}</span>: <span className="elementBody">{jsonData[element] === null ? "null" : typeof jsonData[element] === "object" ? this.unfurlJson(jsonData[element], level + 1) : jsonData[element]}</span>
-  //       // </div>
-  //       <div>
-  //         <div className={"resource-entry"}>
-  //             <div>TEST</div>
-  //         </div>
-  //       </div>
-  //     )
-  //   });
-  // }
-
-  // }
 
   async sendRemsMessage() {
     const remsAdminResponse = await axios.post("http://localhost:8090/rems", this.props.specialtyRxBundle, this.getAxiosOptions());
@@ -102,8 +85,6 @@ export default class RemsInterface extends Component {
       console.log(response);
       console.log(response.data);
     });
-
-
   }
 
   toggleBundle() {
@@ -143,12 +124,14 @@ export default class RemsInterface extends Component {
       this.setState({ response: response });
     })
   }
+
   refreshBundle() {
     this.setState({ spin: true });
     axios.get(`http://localhost:8090/rems/${this.state.remsAdminResponse.data.case_number}`).then((response) => {
       this.setState({ remsAdminResponse: response });
     })
   }
+
   render() {
     const status = this.state.remsAdminResponse?.data?.status;
     let color = "#f7f7f7"
@@ -238,7 +221,6 @@ export default class RemsInterface extends Component {
                     />
                     : ""
                   }
-
                 </div>
 
               </Paper>
@@ -248,7 +230,6 @@ export default class RemsInterface extends Component {
                 {this.renderBundle(this.props.specialtyRxBundle)}
               </div> : ""}
             </div>
-            {/* <button className="submit-btn" onClick={() => { this.sendRemsMessage() }}>Submit</button> */}
           </div>
           :
           <div>
@@ -270,7 +251,6 @@ export default class RemsInterface extends Component {
                     />
                     : ""
                   }
-
                 </div>
 
               </Paper>
