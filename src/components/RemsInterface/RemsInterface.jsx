@@ -240,6 +240,8 @@ export default class RemsInterface extends Component {
 
           </Paper>
           {this.state.viewPisBundle ? <div className="bundle-view">
+            <br></br>
+            <h3>Bundle</h3>
             {this.renderBundle(this.props.specialtyRxBundle)}
           </div> : ""}
         </div>
