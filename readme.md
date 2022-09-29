@@ -3,11 +3,11 @@ This subproject contains a SMART on FHIR app, which provides a standardized way 
 
 ## Running DTR
 
-You can find a complete end-to-end set up guide for DRLS, including DTR, [here](https://github.com/HL7-DaVinci/CRD/blob/master/SetupGuideForMacOS.md).
+You can find a complete end-to-end set up guide for DRLS, including DTR, [here](https://github.com/mcode/REMS/blob/master/SimpleSetupGuide.md).
 
 # Getting Started
 
-If you are running DRLS for the first time, we highly recommend you refer to our comprehensive [setup guide](https://github.com/HL7-DaVinci/CRD/blob/master/SetupGuideForMacOS.md) for instructions on how to install DTR. Once you have DRLS up and running, you can return here to find more detailed information about how DTR works.
+If you are running DRLS for the first time, we highly recommend you refer to our comprehensive [setup guide](https://github.com/mcode/REMS/blob/master/SimpleSetupGuide.md) for instructions on how to install DTR. Once you have DRLS up and running, you can return here to find more detailed information about how DTR works.
 
 ## Prerequisites
 
@@ -67,26 +67,6 @@ Steps to prepare local EHR server, Keycloak server, and Request Generator:
 >Test it!
 
 >Assuming you have completed the above. You should be able to send a request from the CRD Request Generator in order for the SMART app to launch by clicking the `Patient Select:` button to pre-populate the inputs. Choose a `Device, Service, or Medication Request` from the drop-down for one of the patients, then click anywhere in the row corresponding to the patient for whom you selected a `Device, Service, or Medication Request`. The data will be prefetched and you can send the request by pressing the `Submit` button. You should get a CDS Hooks Card back. Click the SMART link button for `Order Form` and you should see a login screen. Login with whatever user you've registered, and the SMART App should proceed to launch.
-
-## Building Releases
-
-Official releases are built automatically, but you may test the process or roll your own similar to the following:
-
-    docker build -t hspc/davinci-dtr:latest .
-
-To run dev (https=false, port=3005, proxy=http://localhost:8090):
-
-	docker run -it --name davinci-dtr -p 3005:3005 --rm hspc/davinci-dtr:latest
-	
-To run production (https=true, port=3005, proxy=https://davinci-crd.logicahealth.org):
-
-	docker run -e VERSION='Prod' -it --name davinci-dtr -p 3005:3005 --rm hspc/davinci-dtr:latest
-	
-To run configurable template:
-
-	docker run -e VERSION='Template' -e PROXY_TARGET='http:\/\/localhost:8090' -e SERVER_PORT='3005' -e SERVER_HTTPS='false' -it --name davinci-dtr -p 3005:3005 --rm hspc/davinci-dtr:latest
-
-The configurable template will use the environment variables passed to the docker run command to replace the `PROXY_TARGET`, `SERVER_PORT`, and `SERVER_HTTPS` values in the webpack configuration file.
 
 # Other Documentation
 
