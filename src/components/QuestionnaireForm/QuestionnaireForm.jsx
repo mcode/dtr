@@ -39,7 +39,6 @@ export default class QuestionnaireForm extends Component {
     this.smart = props.smart;
     this.patientId = props.patientId;
     this.fhirVersion = props.fhirVersion;
-    this.FHIR_PREFIX = props.FHIR_PREFIX;
     this.appContext = props.appContext;
     this.partialForms = {};
     this.handleGtable = this.handleGtable.bind(this);
@@ -73,8 +72,7 @@ export default class QuestionnaireForm extends Component {
         savedResponse: mergedResponse
       })
     } else {
-
-      this.loadPreviousForm();
+      this.loadPreviousForm(false);
 
       // If not using saved QuestionnaireResponse, create a new one
       let newResponse = {
@@ -173,12 +171,15 @@ export default class QuestionnaireForm extends Component {
     return `QuestionnaireResponse?_lastUpdated=gt${updateDate.toISOString().split('T')[0]}&status=in-progress`
   }
 
-  loadPreviousForm() {
+  loadPreviousForm(showError = true) {
     // search for any QuestionnaireResponses
-    this.smart.request(this.getRetrieveSaveQuestionnaireUrl() +
-      "&subject=" + this.getPatient()).then((result) => {
-        this.popupClear("Would you like to load a previous form?", "Cancel", false);
-        this.processSavedQuestionnaireResponses(result, true);
+    let questionnaireResponseUrl = this.getRetrieveSaveQuestionnaireUrl();
+    questionnaireResponseUrl = questionnaireResponseUrl + "&subject=" + this.getPatient();
+    console.log("Using URL " + questionnaireResponseUrl);
+
+    this.smart.request(questionnaireResponseUrl).then((result) => {
+        this.popupClear("Would you like to load a previously in-progress form?", "Cancel", false);
+        this.processSavedQuestionnaireResponses(result, showError);
       }, ((result) => {
         this.popupClear("Error: failed to load previous in-progress forms", "OK", true);
         this.popupLaunch();
@@ -187,7 +188,17 @@ export default class QuestionnaireForm extends Component {
 
   // retrieve next sets of questions
   loadNextQuestions() {
-    const url = this.props.FILE_PATH + "fhir" + "/" + this.fhirVersion + "/" + "Questionnaire/$next-question";
+    // this is a temp fix for adaptive forms 
+    // TODO: figure out what to do about next-question standardization.
+    let qformUrl = this.props.appContext.questionnaire;
+    if(qformUrl) {
+      const urlArray = qformUrl.split('/');
+      urlArray.pop();
+      qformUrl = urlArray.join('/');
+    } else {
+      qformUrl = 'http://localhost:8090/fhir/r4/Questionnaire'
+    }
+    const url = `${qformUrl}/$next-question`;
 
     const currentQuestionnaireResponse = window.LForms.Util.getFormFHIRData('QuestionnaireResponse', this.fhirVersion, "#formContainer");;
     //const mergedResponse = this.mergeResponseForSameLinkId(currentQuestionnaireResponse);
@@ -228,13 +239,14 @@ export default class QuestionnaireForm extends Component {
       let count = 0;
 
       partialResponses.entry.forEach(bundleEntry => {
-        let questionnaireId = null;
-        if(bundleEntry.resource.contained) {
-          questionnaireId = bundleEntry.resource?.contained[0]?.id;
+        let idMatch = false;
+        if(bundleEntry.resource.contained){
+          const questionnaireId = bundleEntry.resource?.contained[0].id;
+          idMatch = this.props.qform.id === questionnaireId;
         }
-        const questionaireIdUrl = bundleEntry.resource.questionnaire;
+        const questionnaireIdUrl = bundleEntry.resource.questionnaire;
 
-        if (this.props.qform.id === questionnaireId || questionaireIdUrl.includes(this.props.qform.id)) {
+        if ( idMatch || questionnaireIdUrl.includes(this.props.qform.id)) {
           count = count + 1;
           // add the option to the popupOptions
           let date = new Date(bundleEntry.resource.authored);
@@ -371,7 +383,7 @@ export default class QuestionnaireForm extends Component {
           e.url == "http://hl7.org/fhir/StructureDefinition/cqf-expression" || e.url == "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-initialExpression"
         );
 
-        if (isGtable && containsValueExpression) {
+        if (isGtable && containsValueExpression && !this.props.standalone) {
           // check if the prepopulationResult contains any value
           // if yes, then need to add corresponding sub-items then provide the answer
           // need to figure out which value is provided from the prepopulationResult though
@@ -977,7 +989,14 @@ export default class QuestionnaireForm extends Component {
     }
 
     console.log(requestOptions);
-    let url = this.FHIR_PREFIX + this.fhirVersion + "/QuestionnaireResponse";
+    let url = this.props.appContext.questionnaire;
+    if(url) {
+      const urlArray = url.split('/');
+      url = urlArray.slice(0, -2).join('/');
+    } else {
+      url = 'http://localhost:8090/fhir/r4'
+    }
+    url = url + "/QuestionnaireResponse";
     console.log(url);
     fetch(url, requestOptions).then(handleFetchErrors).then(r => {
       let msg = "QuestionnaireResponse sent to Payer";
