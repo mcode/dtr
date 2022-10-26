@@ -273,7 +273,7 @@ export default class App extends Component {
               });
             }
           });
-          console.log(fullBundle);
+          console.log(allLibrariesResults);
           this.setState({ 
             bundle: fullBundle,
             cqlPrepopulationResults: allLibrariesResults, 
