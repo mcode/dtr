@@ -83,8 +83,6 @@ function doSearch(smart, type, fhirVersion, request, callback) {
       break;
     case "MedicationStatement":
       smart.patient.request(type, {resolveReferences: 'medicationReference', flat: true, graph: false}).then((result) =>{
-        console.log("med statement result");
-        console.log(result);
         let finalResult = []
         // TODO: This system should be untangled, reference resolution and resource gathering shouldn't be done separately 
         if(result && result.data){
@@ -145,13 +143,9 @@ function doSearch(smart, type, fhirVersion, request, callback) {
   });
 
   if( usePatient ) {
-    console.log("we're going in again patient")
-    console.log(type)
     smart.patient.request(`${type}?${query}`)
     .then(processSuccess(smart, [], callback), processError(smart, callback));
   } else if(q._id){
-    console.log("we're going in again")
-    console.log(type)
     smart.request(`${type}?${query}`)
     .then(processSuccess(smart, [], callback), processError(smart, callback));   
   }
