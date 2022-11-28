@@ -668,9 +668,9 @@ export default class QuestionnaireForm extends Component {
         system = "RxNorm"
       }
 
-      if (system.length > 0) {
-        displayText = displayText + ' - ' + system + ' - ' + v.code
-      }
+      // if (system.length > 0) {
+      //   displayText = displayText + ' - ' + system + ' - ' + v.code
+      // }
     }
 
     return {

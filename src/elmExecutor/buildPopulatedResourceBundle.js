@@ -80,6 +80,21 @@ function doSearch(smart, type, fhirVersion, request, callback) {
           // unknown version
           break;
       }
+      break;
+    case "MedicationStatement":
+      smart.patient.request(type, {resolveReferences: 'medicationReference', flat: true, graph: false}).then((result) =>{
+        let finalResult = []
+        // TODO: This system should be untangled, reference resolution and resource gathering shouldn't be done separately 
+        if(result && result.data){
+          if(result.references) {
+            Object.keys(result.references).forEach((e)=>{
+              finalResult.push(result.references[e])
+            })
+          }
+          callback(finalResult);
+        }
+      })
+      break;
   }
 
   // If this is for Epic, there are some specific modifications needed for the queries to work properly
@@ -126,6 +141,7 @@ function doSearch(smart, type, fhirVersion, request, callback) {
   Object.keys(q).forEach((parameter)=>{
       query.set(parameter, q[parameter]);
   });
+
   if( usePatient ) {
     smart.patient.request(`${type}?${query}`)
     .then(processSuccess(smart, [], callback), processError(smart, callback));
