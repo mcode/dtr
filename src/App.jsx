@@ -619,8 +619,7 @@ export default class App extends Component {
   render() {
     if (
       (this.state.questionnaire &&
-        this.state.cqlPrepopulationResults &&
-        this.state.bundle)
+        this.state.cqlPrepopulationResults)
       ||
       (this.state.questionnaire && 
         this.state.response && 
