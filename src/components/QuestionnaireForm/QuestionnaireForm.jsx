@@ -1098,272 +1098,274 @@ export default class QuestionnaireForm extends Component {
       }
     };
 
-    const priorAuthBundle = JSON.parse(JSON.stringify(this.props.bundle));
-    if (priorAuthBundle && this.isPriorAuthBundleValid(priorAuthBundle)) {
-      priorAuthBundle.entry.unshift({ resource: managingOrg });
-      priorAuthBundle.entry.unshift({ resource: facility });
-      priorAuthBundle.entry.unshift({ resource: this.props.deviceRequest });
-      priorAuthBundle.entry.unshift({ resource: qr });
+    if(this.props.bundle){
+      const priorAuthBundle = JSON.parse(JSON.stringify(this.props.bundle));
+      if (priorAuthBundle && this.isPriorAuthBundleValid(priorAuthBundle)) {
+        priorAuthBundle.entry.unshift({ resource: managingOrg });
+        priorAuthBundle.entry.unshift({ resource: facility });
+        priorAuthBundle.entry.unshift({ resource: this.props.deviceRequest });
+        priorAuthBundle.entry.unshift({ resource: qr });
 
-      this.generateAndStoreDocumentReference(qr, priorAuthBundle);
-      this.storeQuestionnaireResponseToEhr(qr, false);
+        this.generateAndStoreDocumentReference(qr, priorAuthBundle);
+        this.storeQuestionnaireResponseToEhr(qr, false);
 
-      const priorAuthClaim = {
-        resourceType: "Claim",
-        status: "active",
-        type: {
-          coding: [
+        const priorAuthClaim = {
+          resourceType: "Claim",
+          status: "active",
+          type: {
+            coding: [
+              {
+                system: "http://terminology.hl7.org/CodeSystem/claim-type",
+                code: "professional",
+                display: "Professional"
+              }
+            ]
+          },
+          identifier: [
             {
-              system: "http://terminology.hl7.org/CodeSystem/claim-type",
-              code: "professional",
-              display: "Professional"
+              system: "urn:uuid:mitre-drls",
+              value: shortid.generate()
+            }
+          ],
+          use: "preauthorization",
+          patient: { reference: this.makeReference(priorAuthBundle, "Patient") },
+          created: qr.authored,
+          provider: {
+            // TODO: make this organization
+            reference: this.makeReference(priorAuthBundle, "Practitioner")
+          },
+          facility: {
+            reference: this.makeReference(priorAuthBundle, "Location")
+          },
+          priority: { coding: [{ code: "normal" }] },
+          careTeam: [
+            {
+              sequence: 1,
+              provider: {
+                reference: this.makeReference(priorAuthBundle, "Practitioner")
+              },
+              extension: [
+                {
+                  url: "http://terminology.hl7.org/ValueSet/v2-0912",
+                  valueCode: "OP"
+                }
+              ]
+            }
+          ],
+          supportingInfo: [
+            {
+              sequence: 1,
+              category: {
+                coding: [
+                  {
+                    system:
+                      "http://hl7.org/us/davinci-pas/CodeSystem/PASSupportingInfoType",
+                    code: "patientEvent"
+                  }
+                ]
+              },
+              timingPeriod: {
+                start: "2020-01-01",
+                end: "2021-01-01"
+              }
+            },
+            {
+              sequence: 2,
+              category: {
+                coding: [
+                  {
+                    system:
+                      "http://terminology.hl7.org/CodeSystem/claiminformationcategory",
+                    code: "info",
+                    display: "Information"
+                  }
+                ]
+              },
+              valueReference: {
+                reference: this.makeReference(
+                  priorAuthBundle,
+                  "QuestionnaireResponse"
+                )
+              }
+            }
+          ],
+          item: [
+            {
+              sequence: 1,
+              careTeamSequence: [1],
+              productOrService: this.getCode(),
+              quantity: {
+                value: 1
+              }
+              // TODO: add extensions
+            }
+          ],
+          diagnosis: [],
+          insurance: [
+            {
+              sequence: 1,
+              focal: true,
+              coverage: {
+                // TODO: diagnosis is not a reference it must be CodeableConcept
+                reference: this.makeReference(priorAuthBundle, "Coverage")
+              }
             }
           ]
-        },
-        identifier: [
-          {
-            system: "urn:uuid:mitre-drls",
-            value: shortid.generate()
+        };
+
+        const signature = {
+          resourceType: "Signature",
+          type: [
+            {
+              system: "urn:iso-astm:E1762-95:2013",
+              code: "1.2.840.10065.1.12.1.14",
+              display: "Source Signature"
+            }
+          ],
+          when:  new Date(Date.now()).toISOString(),
+          who:  this.makeReference(priorAuthBundle, "Practitioner")
+        }
+        var sequence = 1;
+        priorAuthBundle.entry.forEach(function (entry, index) {
+          if (entry.resource.resourceType == "Condition") {
+            priorAuthClaim.diagnosis.push({
+              sequence: sequence++,
+              diagnosisReference: { reference: "Condition/" + entry.resource.id }
+            });
           }
-        ],
-        use: "preauthorization",
-        patient: { reference: this.makeReference(priorAuthBundle, "Patient") },
-        created: qr.authored,
-        provider: {
-          // TODO: make this organization
-          reference: this.makeReference(priorAuthBundle, "Practitioner")
-        },
-        facility: {
-          reference: this.makeReference(priorAuthBundle, "Location")
-        },
-        priority: { coding: [{ code: "normal" }] },
-        careTeam: [
-          {
-            sequence: 1,
-            provider: {
-              reference: this.makeReference(priorAuthBundle, "Practitioner")
-            },
-            extension: [
+        });
+        priorAuthBundle.timestamp = new Date(Date.now()).toISOString()
+        priorAuthBundle.language = "en";
+        priorAuthBundle.id = shortid.generate();
+        priorAuthBundle.meta = {
+          lastUpdated: Date.now()
+        }
+        priorAuthBundle.implicitRules = "http://build.fhir.org/ig/HL7/davinci-pas/StructureDefinition-profile-pas-request-bundle"
+        priorAuthBundle.identifier = {
+          use: "official",
+          system: "urn:uuid:mitre-drls",
+          value: shortid.generate()
+        }
+        priorAuthBundle.signature = signature;
+        priorAuthBundle.entry.unshift({ resource: priorAuthClaim });
+
+        const specialtyRxBundle = JSON.parse(JSON.stringify(priorAuthBundle));
+        specialtyRxBundle.type = "message";
+        if (this.makeReference(priorAuthBundle, "MedicationRequest")) {
+          const pharmacy = {
+            resourceType: "Organization",
+            id: "pharm0111",
+            identifier: [
               {
-                url: "http://terminology.hl7.org/ValueSet/v2-0912",
-                valueCode: "OP"
+                system: "http://hl7.org/fhir/sid/us-npi",
+                value: "1837247346"
+              },
+              {
+                system: "http://terminology.hl7.org/CodeSystem/NCPDPProviderIdentificationNumber",
+                value: "838283882"
+              }
+            ],
+            telecom: [
+              {
+                system : "phone", 
+                value : "919-234-5174",
+                use : "work", 
+                rank : "1", 
+              }
+            ],
+            address: [
+              {
+                use: "work",
+                state: "IL",
+                postalCode: "62864",
+                city: "Mount Vernon",
+                line: ["1500 Main St"]
               }
             ]
           }
-        ],
-        supportingInfo: [
-          {
-            sequence: 1,
-            category: {
-              coding: [
-                {
-                  system:
-                    "http://hl7.org/us/davinci-pas/CodeSystem/PASSupportingInfoType",
-                  code: "patientEvent"
-                }
-              ]
-            },
-            timingPeriod: {
-              start: "2020-01-01",
-              end: "2021-01-01"
-            }
-          },
-          {
-            sequence: 2,
-            category: {
-              coding: [
-                {
-                  system:
-                    "http://terminology.hl7.org/CodeSystem/claiminformationcategory",
-                  code: "info",
-                  display: "Information"
-                }
-              ]
-            },
-            valueReference: {
-              reference: this.makeReference(
-                priorAuthBundle,
-                "QuestionnaireResponse"
-              )
-            }
-          }
-        ],
-        item: [
-          {
-            sequence: 1,
-            careTeamSequence: [1],
-            productOrService: this.getCode(),
-            quantity: {
-              value: 1
-            }
-            // TODO: add extensions
-          }
-        ],
-        diagnosis: [],
-        insurance: [
-          {
-            sequence: 1,
-            focal: true,
-            coverage: {
-              // TODO: diagnosis is not a reference it must be CodeableConcept
-              reference: this.makeReference(priorAuthBundle, "Coverage")
-            }
-          }
-        ]
-      };
 
-      const signature = {
-        resourceType: "Signature",
-        type: [
-          {
-            system: "urn:iso-astm:E1762-95:2013",
-            code: "1.2.840.10065.1.12.1.14",
-            display: "Source Signature"
-          }
-        ],
-        when:  new Date(Date.now()).toISOString(),
-        who:  this.makeReference(priorAuthBundle, "Practitioner")
-      }
-      var sequence = 1;
-      priorAuthBundle.entry.forEach(function (entry, index) {
-        if (entry.resource.resourceType == "Condition") {
-          priorAuthClaim.diagnosis.push({
-            sequence: sequence++,
-            diagnosisReference: { reference: "Condition/" + entry.resource.id }
-          });
-        }
-      });
-      priorAuthBundle.timestamp = new Date(Date.now()).toISOString()
-      priorAuthBundle.language = "en";
-      priorAuthBundle.id = shortid.generate();
-      priorAuthBundle.meta = {
-        lastUpdated: Date.now()
-      }
-      priorAuthBundle.implicitRules = "http://build.fhir.org/ig/HL7/davinci-pas/StructureDefinition-profile-pas-request-bundle"
-      priorAuthBundle.identifier = {
-        use: "official",
-        system: "urn:uuid:mitre-drls",
-        value: shortid.generate()
-      }
-      priorAuthBundle.signature = signature;
-      priorAuthBundle.entry.unshift({ resource: priorAuthClaim });
-
-      const specialtyRxBundle = JSON.parse(JSON.stringify(priorAuthBundle));
-      specialtyRxBundle.type = "message";
-      if (this.makeReference(priorAuthBundle, "MedicationRequest")) {
-        const pharmacy = {
-          resourceType: "Organization",
-          id: "pharm0111",
-          identifier: [
-            {
-              system: "http://hl7.org/fhir/sid/us-npi",
-              value: "1837247346"
-            },
-            {
-              system: "http://terminology.hl7.org/CodeSystem/NCPDPProviderIdentificationNumber",
-              value: "838283882"
-            }
-          ],
-          telecom: [
-            {
-              system : "phone", 
-              value : "919-234-5174",
-              use : "work", 
-              rank : "1", 
-            }
-          ],
-          address: [
-            {
-              use: "work",
-              state: "IL",
-              postalCode: "62864",
-              city: "Mount Vernon",
-              line: ["1500 Main St"]
-            }
-          ]
-        }
-
-        const specialtyRxSearchResult = {
-          resourceType: "Bundle",
-          type: "searchset",
-          id: "bundle02",
-          total: 0,
-          link: [
-            {
-              relation: "self",
-              url: "",
-            }
-          ],
-          entry: []
-        }
-
-        const specialtyRxParameters = {
-          resourceType: "Parameters",
-          id: "param0111",
-          parameter: [
-            {
-              name: "source-patient",
-              reference: this.makeReference(priorAuthBundle, "Patient")
-            },
-            {
-              name: "prescription",
-              reference: this.makeReference(priorAuthBundle, "MedicationRequest")
-            },
-            {
-              name: "pharmacy",
-              reference: "Organization/pharm0111"
-            },
-            {
-              name: "prescriber",
-              reference: this.makeReference(priorAuthBundle, "Practitioner")
-            },
-            {
-              name: "search-result",
-              reference: "Bundle/bundle02"
-            },
-  
-          ]
-        }
-  
-        const specialtyRxMessageHeader = {
-          resourceType: "MessageHeader",
-          id: "msghdr0111",
-          event: [
-            {
-              eventCoding: {
-                system: "http://hl7.org/fhir/us/specialty-rx/CodeSystem/specialty-rx-event-type",
-                code: "query-response-unsolicited",
+          const specialtyRxSearchResult = {
+            resourceType: "Bundle",
+            type: "searchset",
+            id: "bundle02",
+            total: 0,
+            link: [
+              {
+                relation: "self",
+                url: "",
               }
-            }
-          ],
-          focus: {
-            parameters: {
-              reference: "Parameters/param0111"
-            }
-          },
-          source: {
-            // TODO: url should be dynamically created
-            // also if DTR expects to recieve a response it 
-            // will need an endpoint to recieve it at
-            endpoint: "http://localhost:3005"
+            ],
+            entry: []
           }
-  
-        }       
-        
-        specialtyRxBundle.entry.unshift({ resource: specialtyRxSearchResult });
-        specialtyRxBundle.entry.unshift({ resource: pharmacy });
-        specialtyRxBundle.entry.unshift({ resource: specialtyRxParameters });
-        specialtyRxBundle.entry.unshift({ resource: specialtyRxMessageHeader });
 
+          const specialtyRxParameters = {
+            resourceType: "Parameters",
+            id: "param0111",
+            parameter: [
+              {
+                name: "source-patient",
+                reference: this.makeReference(priorAuthBundle, "Patient")
+              },
+              {
+                name: "prescription",
+                reference: this.makeReference(priorAuthBundle, "MedicationRequest")
+              },
+              {
+                name: "pharmacy",
+                reference: "Organization/pharm0111"
+              },
+              {
+                name: "prescriber",
+                reference: this.makeReference(priorAuthBundle, "Practitioner")
+              },
+              {
+                name: "search-result",
+                reference: "Bundle/bundle02"
+              },
+    
+            ]
+          }
+    
+          const specialtyRxMessageHeader = {
+            resourceType: "MessageHeader",
+            id: "msghdr0111",
+            event: [
+              {
+                eventCoding: {
+                  system: "http://hl7.org/fhir/us/specialty-rx/CodeSystem/specialty-rx-event-type",
+                  code: "query-response-unsolicited",
+                }
+              }
+            ],
+            focus: {
+              parameters: {
+                reference: "Parameters/param0111"
+              }
+            },
+            source: {
+              // TODO: url should be dynamically created
+              // also if DTR expects to recieve a response it 
+              // will need an endpoint to recieve it at
+              endpoint: "http://localhost:3005"
+            }
+    
+          }       
+          
+          specialtyRxBundle.entry.unshift({ resource: specialtyRxSearchResult });
+          specialtyRxBundle.entry.unshift({ resource: pharmacy });
+          specialtyRxBundle.entry.unshift({ resource: specialtyRxParameters });
+          specialtyRxBundle.entry.unshift({ resource: specialtyRxMessageHeader });
+
+        }
+
+        console.log("specialtyRx", specialtyRxBundle);
+
+
+        this.props.setPriorAuthClaim(priorAuthBundle);
+        this.props.setSpecialtyRxBundle(specialtyRxBundle);
+      } else {
+        alert("Prior Auth Bundle is not available or does not contain enough resources for Prior Auth. Can't submit to prior auth.")
       }
-
-      console.log("specialtyRx", specialtyRxBundle);
-
-
-      this.props.setPriorAuthClaim(priorAuthBundle);
-      this.props.setSpecialtyRxBundle(specialtyRxBundle);
-    } else {
-      alert("Prior Auth Bundle is not available or does not contain enough resources for Prior Auth. Can't submit to prior auth.")
     }
   }
 
