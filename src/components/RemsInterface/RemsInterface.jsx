@@ -110,7 +110,7 @@ export default class RemsInterface extends Component {
       let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
       let patientName = patient.name[0].given[0] + ' ' + patient.name[0].family;
 
-      console.log(`http://localhost:5051/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`);
+      // console.log(`http://localhost:5051/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`);
 
       axios.get(`http://localhost:5051/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`, remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
         this.setState({ response });
@@ -157,7 +157,29 @@ export default class RemsInterface extends Component {
 
   refreshPisBundle() {
     this.setState({ spinPis: true });
-    axios.get(`http://localhost:3010/api/doctorOrder/${this.state.response.data.doctorOrder._id}`).then((response) => {
+    
+    let params = this.getResource(this.props.specialtyRxBundle, this.props.specialtyRxBundle.entry[0].resource.focus.parameters.reference);
+
+      // stakeholder and medication references
+      let prescriptionReference = "";
+      let patientReference = "";
+      for (let param of params.parameter) {
+        if (param.name === "prescription") {
+          prescriptionReference = param.reference;
+        }
+        else if (param.name === "source-patient") {
+          patientReference = param.reference;
+        }
+      }
+
+      // obtain drug information from database
+      let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
+      let prescriptionDisplay = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
+      let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
+      let patientName = patient.name[0].given[0] + ' ' + patient.name[0].family;
+
+    axios.get(`http://localhost:5051/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`)
+    .then((response) => {
       this.setState({ response: response });
     })
   }
