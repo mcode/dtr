@@ -57,38 +57,29 @@ export default class RemsInterface extends Component {
       return (
         <div>
           <div className={"resource-entry etasu-container"}>
-            <div className={"resource-entry-text"}  >{metReq.requirement.name}</div>
+            <div className={"resource-entry-text"}  >{metReq.requirementName}</div>
               <div className={"resource-entry-icon"}>{metReq.completed ? "✅"  : "❌"}</div>
-            <div className={"resource-entry-hover"}>{metReq.requirement.description}</div>
+            <div className={"resource-entry-hover"}>{metReq.requirementDescription}</div>
           </div>
-          {
-            metReq.childMetRequirements.map(subMetReq =>
-              <div className={"resource-entry resource-child etasu-container"}>
-                <div className={"resource-entry-text"}>{subMetReq.requirement.name}</div>
-                <div className={"resource-entry-icon"}>{subMetReq.completed ? "✅" : "❌"}</div>
-                <div className={"resource-entry-hover"}>{subMetReq.requirement.description}</div>
-              </div>
-            )
-          }
         </div>
       )
     });
 
   }
-
+  
   async sendRemsMessage() {
-    const remsAdminResponse = await axios.post("http://localhost:8090/rems", this.props.specialtyRxBundle, this.getAxiosOptions());
+    const remsAdminResponse = await axios.post("http://localhost:8090/etasu/met", this.props.specialtyRxBundle, this.getAxiosOptions());
     this.setState({ remsAdminResponse });
     console.log(remsAdminResponse)
 
-    // Will not send post request to PIS if only for prescriber enrollment
-    if(this.state.remsAdminResponse?.data?.case_number){
-      axios.post("http://localhost:3010/api/doctorOrder/$process-message", remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
-        this.setState({ response });
-        console.log(response);
-        console.log(response.data);
-      });
-    }
+    // Will not send post request to PIS if only for patient enrollment
+    // if(this.state.remsAdminResponse?.data?.case_number){
+    //   axios.post("http://localhost:3010/api/doctorOrder/$process-message", remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
+    //     this.setState({ response });
+    //     console.log(response);
+    //     console.log(response.data);
+    //   });
+    // }
   }
 
   toggleBundle() {
@@ -131,7 +122,7 @@ export default class RemsInterface extends Component {
 
   refreshBundle() {
     this.setState({ spin: true });
-    axios.get(`http://localhost:8090/rems/${this.state.remsAdminResponse.data.case_number}`).then((response) => {
+    axios.get(`http://localhost:8090/etasu/met/${this.state.remsAdminResponse.data.case_number}`).then((response) => {
       this.setState({ remsAdminResponse: response });
     })
   }
