@@ -66,20 +66,67 @@ export default class RemsInterface extends Component {
     });
 
   }
+
+  getResource(bundle, resourceReference) {
+    let temp = resourceReference.split("/");
+    let _resourceType = temp[0];
+    let _id = temp[1];
+
+    for (let i = 0; i < bundle.entry.length; i++) {
+      if ((bundle.entry[i].resource.resourceType === _resourceType)
+        && (bundle.entry[i].resource.id === _id)) {
+        return bundle.entry[i].resource;
+      }
+    }
+    return null;
+  }
   
   async sendRemsMessage() {
     const remsAdminResponse = await axios.post("http://localhost:8090/etasu/met", this.props.specialtyRxBundle, this.getAxiosOptions());
-    this.setState({ remsAdminResponse });
-    console.log(remsAdminResponse)
+    console.log(remsAdminResponse)    
 
-    // Will not send post request to PIS if only for patient enrollment
-    // if(this.state.remsAdminResponse?.data?.case_number){
-    //   axios.post("http://localhost:3010/api/doctorOrder/$process-message", remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
-    //     this.setState({ response });
-    //     console.log(response);
-    //     console.log(response.data);
-    //   });
-    // }
+    if (remsAdminResponse) {
+      this.setState({ remsAdminResponse });
+    } else {
+      // error handling 
+    }
+    
+    //  Will not send post request to PIS if only for patient enrollment
+    if(this.state.remsAdminResponse?.data?.case_number){
+
+      // extract params and questionnaire response identifier
+      let params = this.getResource(this.props.specialtyRxBundle, this.props.specialtyRxBundle.entry[0].resource.focus.parameters.reference);
+
+      // stakeholder and medication references
+      let prescriptionReference = "";
+      let patientReference = "";
+      for (let param of params.parameter) {
+        if (param.name === "prescription") {
+          prescriptionReference = param.reference;
+        }
+        else if (param.name === "source-patient") {
+          patientReference = param.reference;
+        }
+      }
+
+      // obtain drug information from database
+      let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
+      let prescriptionDisplay = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
+      let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
+      let patientName = patient.name[0].given[0] + ' ' + patient.name[0].family;
+
+      console.log(`http://localhost:5150/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`);
+
+      axios.get(`http://localhost:5150/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`, remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
+        this.setState({ response });
+        console.log(response);
+        console.log(response.data);
+      });
+    }
+
+    // const remsAdminResponse = await axios.post("http://localhost:8090/etasu/met", this.props.specialtyRxBundle, this.getAxiosOptions());
+    // this.setState({ remsAdminResponse });
+    // console.log(remsAdminResponse)
   }
 
   toggleBundle() {
