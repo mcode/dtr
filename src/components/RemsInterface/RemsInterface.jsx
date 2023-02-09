@@ -84,12 +84,7 @@ export default class RemsInterface extends Component {
   async sendRemsMessage() {
     const remsAdminResponse = await axios.post("http://localhost:8090/etasu/met", this.props.specialtyRxBundle, this.getAxiosOptions());
     console.log(remsAdminResponse)    
-
-    if (remsAdminResponse) {
-      this.setState({ remsAdminResponse });
-    } else {
-      // error handling 
-    }
+    this.setState({ remsAdminResponse });
     
     //  Will not send post request to PIS if only for patient enrollment
     if(this.state.remsAdminResponse?.data?.case_number){
@@ -195,116 +190,127 @@ export default class RemsInterface extends Component {
     }
 
     // Checking if REMS Request (pt enrollment) || Met Requirments (prescriber Form)
+    let hasRemsResponse = this.state.remsAdminResponse?.data ? true : false
     let hasRemsCase = this.state.remsAdminResponse?.data?.case_number ? true : false;
 
     return (
       <div>
-        {hasRemsCase ?
+        {
+          hasRemsResponse ?
           <div>
-            <div className="container left-form">
-              <h1>REMS Admin Status</h1>
-              <Paper style={{ paddingBottom: "5px" }}>
-                <div className="status-icon" style={{ backgroundColor: color }}></div>
-                <div className="bundle-entry">
-                  Case Number : {this.state.remsAdminResponse?.data?.case_number || "N/A"}
-                </div>
-                <div className="bundle-entry">
-                  Status: {this.state.remsAdminResponse?.data?.status}
-                </div>
-                <div className="bundle-entry">
-                  <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
-                  <Button variant="contained" onClick={this.toggleResponse}>View ETASU</Button>
-
-                  {this.state.remsAdminResponse?.data?.case_number ?
-                    <AutorenewIcon
-                      className={this.state.spin === true ? "refresh" : "renew-icon"}
-                      onClick={this.refreshBundle}
-                      onAnimationEnd={() => this.setState({ spin: false })}
-                    />
-                    : ""
-                  }
-
-                </div>
-
-              </Paper>
-              {this.state.viewResponse ?
-                <div className="bundle-view">
+          {hasRemsCase ?
+            <div>
+              <div className="container left-form">
+                <h1>REMS Admin Status</h1>
+                <Paper style={{ paddingBottom: "5px" }}>
+                  <div className="status-icon" style={{ backgroundColor: color }}></div>
+                  <div className="bundle-entry">
+                    Case Number : {this.state.remsAdminResponse?.data?.case_number || "N/A"}
+                  </div>
+                  <div className="bundle-entry">
+                    Status: {this.state.remsAdminResponse?.data?.status}
+                  </div>
+                  <div className="bundle-entry">
+                    <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
+                    <Button variant="contained" onClick={this.toggleResponse}>View ETASU</Button>
+  
+                    {this.state.remsAdminResponse?.data?.case_number ?
+                      <AutorenewIcon
+                        className={this.state.spin === true ? "refresh" : "renew-icon"}
+                        onClick={this.refreshBundle}
+                        onAnimationEnd={() => this.setState({ spin: false })}
+                      />
+                      : ""
+                    }
+  
+                  </div>
+  
+                </Paper>
+                {this.state.viewResponse ?
+                  <div className="bundle-view">
+                    <br></br>
+                    <h3>ETASU</h3>
+                    {this.unfurlJson(this.state.remsAdminResponse?.data, 0)}
+                  </div>
+                  :
+                  ""}
+                {this.state.viewBundle ? <div className="bundle-view">
                   <br></br>
-                  <h3>ETASU</h3>
-                  {this.unfurlJson(this.state.remsAdminResponse?.data, 0)}
-                </div>
-                :
-                ""}
-              {this.state.viewBundle ? <div className="bundle-view">
-                <br></br>
-                <h3>Bundle</h3>
-                {this.renderBundle(this.props.specialtyRxBundle)}
-              </div> : ""}
-
+                  <h3>Bundle</h3>
+                  {this.renderBundle(this.props.specialtyRxBundle)}
+                </div> : ""}
+  
+              </div>
+  
+              <div className="right-form">
+                <h1>Pharmacy Status</h1>
+                <Paper style={{ paddingBottom: "5px" }}>
+                  <div className="status-icon" style={{ backgroundColor: colorPis }}></div>
+                  <div className="bundle-entry">
+                    ID : {this.state.response?.data?.doctorOrder?._id || "N/A"}
+                  </div>
+                  <div className="bundle-entry">
+                    Status: {this.state.response?.data?.doctorOrder?.dispenseStatus}
+                  </div>
+                  <div className="bundle-entry">
+                    <Button variant="contained" onClick={this.togglePisBundle}>View Bundle</Button>
+                    {this.state.response?.data?.doctorOrder?._id ?
+                      <AutorenewIcon
+                        className={this.state.spinPis === true ? "refresh" : "renew-icon"}
+                        onClick={this.refreshPisBundle}
+                        onAnimationEnd={() => this.setState({ spinPis: false })}
+                      />
+                      : ""
+                    }
+                  </div>
+  
+                </Paper>
+                {this.state.viewPisBundle ? <div className="bundle-view">
+                  <br></br>
+                  <h3>Bundle</h3>
+                  {this.renderBundle(this.props.specialtyRxBundle)}
+                </div> : ""}
+              </div>
             </div>
-
-            <div className="right-form">
-              <h1>Pharmacy Status</h1>
-              <Paper style={{ paddingBottom: "5px" }}>
-                <div className="status-icon" style={{ backgroundColor: colorPis }}></div>
-                <div className="bundle-entry">
-                  ID : {this.state.response?.data?.doctorOrder?._id || "N/A"}
-                </div>
-                <div className="bundle-entry">
-                  Status: {this.state.response?.data?.doctorOrder?.dispenseStatus}
-                </div>
-                <div className="bundle-entry">
-                  <Button variant="contained" onClick={this.togglePisBundle}>View Bundle</Button>
-                  {this.state.response?.data?.doctorOrder?._id ?
-                    <AutorenewIcon
-                      className={this.state.spinPis === true ? "refresh" : "renew-icon"}
-                      onClick={this.refreshPisBundle}
-                      onAnimationEnd={() => this.setState({ spinPis: false })}
-                    />
-                    : ""
-                  }
-                </div>
-
-              </Paper>
-              {this.state.viewPisBundle ? <div className="bundle-view">
-                <br></br>
-                <h3>Bundle</h3>
-                {this.renderBundle(this.props.specialtyRxBundle)}
-              </div> : ""}
+            :
+            <div>
+              <div className="container left-form">
+                <h1>Prescriber Document Status</h1>
+                <Paper style={{ paddingBottom: "5px" }}>
+                  <div className="status-icon" style={{ backgroundColor: "#5cb85c" }}></div>
+                  <div className="bundle-entry">
+                    Status: Documents successfully submitted
+                  </div>
+                  <div className="bundle-entry">
+                    <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
+  
+                    {this.state.remsAdminResponse?.data?.case_number ?
+                      <AutorenewIcon
+                        className={this.state.spin === true ? "refresh" : "renew-icon"}
+                        onClick={this.refreshBundle}
+                        onAnimationEnd={() => this.setState({ spin: false })}
+                      />
+                      : ""
+                    }
+                  </div>
+  
+                </Paper>
+                {this.state.viewBundle ? <div className="bundle-view">
+                  <br></br>
+                  <h3>Bundle</h3>
+                  {this.renderBundle(this.props.specialtyRxBundle)}
+                </div> : ""}
+  
+              </div>
             </div>
+          }
           </div>
           :
           <div>
-            <div className="container left-form">
-              <h1>Prescriber Document Status</h1>
-              <Paper style={{ paddingBottom: "5px" }}>
-                <div className="status-icon" style={{ backgroundColor: "#5cb85c" }}></div>
-                <div className="bundle-entry">
-                  Status: Documents successfully submitted
-                </div>
-                <div className="bundle-entry">
-                  <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
-
-                  {this.state.remsAdminResponse?.data?.case_number ?
-                    <AutorenewIcon
-                      className={this.state.spin === true ? "refresh" : "renew-icon"}
-                      onClick={this.refreshBundle}
-                      onAnimationEnd={() => this.setState({ spin: false })}
-                    />
-                    : ""
-                  }
-                </div>
-
-              </Paper>
-              {this.state.viewBundle ? <div className="bundle-view">
-                <br></br>
-                <h3>Bundle</h3>
-                {this.renderBundle(this.props.specialtyRxBundle)}
-              </div> : ""}
-
-            </div>
+            No response - form has already been submitted previously....
           </div>
         }
+
       </div>
     )
   }
