@@ -110,9 +110,9 @@ export default class RemsInterface extends Component {
       let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
       let patientName = patient.name[0].given[0] + ' ' + patient.name[0].family;
 
-      console.log(`http://localhost:5150/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`);
+      console.log(`http://localhost:5051/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`);
 
-      axios.get(`http://localhost:5150/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`, remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
+      axios.get(`http://localhost:5051/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`, remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
         this.setState({ response });
         console.log(response);
         console.log(response.data);
