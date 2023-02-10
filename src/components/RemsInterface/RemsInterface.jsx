@@ -269,14 +269,14 @@ export default class RemsInterface extends Component {
                 <Paper style={{ paddingBottom: "5px" }}>
                   <div className="status-icon" style={{ backgroundColor: colorPis }}></div>
                   <div className="bundle-entry">
-                    ID : {this.state.response?.data?.doctorOrder?._id || "N/A"}
+                    ID : {this.state.response?.data?._id || "N/A"}
                   </div>
                   <div className="bundle-entry">
-                    Status: {this.state.response?.data?.doctorOrder?.dispenseStatus}
+                    Status: {this.state.response?.data?.dispenseStatus}
                   </div>
                   <div className="bundle-entry">
-                    <Button variant="contained" onClick={this.togglePisBundle}>View Bundle</Button>
-                    {this.state.response?.data?.doctorOrder?._id ?
+                    {/* <Button variant="contained" onClick={this.togglePisBundle}>View Bundle</Button> */}
+                    {this.state.response?.data?._id ?
                       <AutorenewIcon
                         className={this.state.spinPis === true ? "refresh" : "renew-icon"}
                         onClick={this.refreshPisBundle}
