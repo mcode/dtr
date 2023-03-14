@@ -106,13 +106,16 @@ export default class RemsInterface extends Component {
 
       // obtain drug information from database
       let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
-      let prescriptionDisplay = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
+      let simpleDrugName = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
+      let rxDate = presciption.medicationCodeableConcept.authoredOn;
       let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
-      let patientName = patient.name[0].given[0] + ' ' + patient.name[0].family;
+      let patientFirstName = patient.name[0].given[0];
+      let patientLastName = patient.name[0].family;
+      let patientDOB = patient.birthDate;
 
-      // console.log(`http://localhost:5051/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`);
+      // console.log(`http://localhost:5051/doctorOrders/api/getRx/${patientFirstName}/${patientLastName}/${patientDOB}?simpleDrugName=${simpleDrugName}&rxDate=${rxDate}`);
 
-      axios.get(`http://localhost:5051/doctorOrders/api/getRx/patient/${patientName}/drug/${prescriptionDisplay}`, remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
+      axios.get(`http://localhost:5051/doctorOrders/api/getRx/${patientFirstName}/${patientLastName}/${patientDOB}?simpleDrugName=${simpleDrugName}&rxDate=${rxDate}`, remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
         this.setState({ response });
         console.log(response);
         console.log(response.data);
@@ -160,25 +163,28 @@ export default class RemsInterface extends Component {
     
     let params = this.getResource(this.props.specialtyRxBundle, this.props.specialtyRxBundle.entry[0].resource.focus.parameters.reference);
 
-      // stakeholder and medication references
-      let prescriptionReference = "";
-      let patientReference = "";
-      for (let param of params.parameter) {
-        if (param.name === "prescription") {
-          prescriptionReference = param.reference;
-        }
-        else if (param.name === "source-patient") {
-          patientReference = param.reference;
-        }
+    // stakeholder and medication references
+    let prescriptionReference = "";
+    let patientReference = "";
+    for (let param of params.parameter) {
+      if (param.name === "prescription") {
+        prescriptionReference = param.reference;
       }
+      else if (param.name === "source-patient") {
+        patientReference = param.reference;
+      }
+    }
 
-      // obtain drug information from database
-      let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
-      let prescriptionDisplay = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
-      let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
-      let patientName = patient.name[0].given[0] + ' ' + patient.name[0].family;
+    // obtain drug information from database
+    let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
+    let simpleDrugName = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
+    let rxDate = presciption.medicationCodeableConcept.authoredOn;
+    let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
+    let patientFirstName = patient.name[0].given[0];
+    let patientLastName = patient.name[0].family;
+    let patientDOB = patient.birthDate;
 
-    axios.get(`http://localhost:5051/doctorOrders/api/getRx/patient/${patientName}/drug/${prescriptionDisplay}`)
+    axios.get(`http://localhost:5051/doctorOrders/api/getRx/${patientFirstName}/${patientLastName}/${patientDOB}?simpleDrugName=${simpleDrugName}&rxDate=${rxDate}`)
     .then((response) => {
       this.setState({ response: response });
     })
