@@ -107,7 +107,7 @@ export default class RemsInterface extends Component {
       // obtain drug information from database
       let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
       let simpleDrugName = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
-      let rxDate = presciption.medicationCodeableConcept.authoredOn;
+      let rxDate = presciption.authoredOn;
       let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
       let patientFirstName = patient.name[0].given[0];
       let patientLastName = patient.name[0].family;
@@ -178,7 +178,7 @@ export default class RemsInterface extends Component {
     // obtain drug information from database
     let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
     let simpleDrugName = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
-    let rxDate = presciption.medicationCodeableConcept.authoredOn;
+    let rxDate = presciption.authoredOn;
     let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
     let patientFirstName = patient.name[0].given[0];
     let patientLastName = patient.name[0].family;
