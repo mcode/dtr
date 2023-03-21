@@ -38,6 +38,7 @@ export default class App extends Component {
       response: null,
       priorAuthClaim: null,
       specialtyRxBundle: null,
+      remsAdminResponse: null,
       cqlPrepopulationResults: null,
       orderResource: null,
       bundle: null,
@@ -392,6 +393,10 @@ export default class App extends Component {
     this.setState({ specialtyRxBundle: specialtyRxBundleParam });
   }
 
+  setRemsAdminResponse(remsAdminResponse) {
+    this.setState({remsAdminResponse})
+  }
+
   getQuestionByName(question) {
       //question should be the HTML node
       const temp = question.getElementsByClassName("lf-item-code ng-hide")[0].innerText.trim();
@@ -637,8 +642,8 @@ export default class App extends Component {
           >
 
           </div>
-          {this.state.specialtyRxBundle ? (
-            <RemsInterface specialtyRxBundle={this.state.specialtyRxBundle} />
+          {this.state.specialtyRxBundle && this.state.remsAdminResponse ? (
+            <RemsInterface specialtyRxBundle={this.state.specialtyRxBundle} remsAdminResponse={this.state.remsAdminResponse}/>
           ) : (
             <QuestionnaireForm
               qform={this.state.questionnaire}
@@ -653,6 +658,7 @@ export default class App extends Component {
               priorAuthReq={this.props.priorAuthReq === "true" ? true : false}
               setPriorAuthClaim={this.setPriorAuthClaim.bind(this)}
               setSpecialtyRxBundle={this.setSpecialtyRxBundle.bind(this)}
+              setRemsAdminResponse={this.setRemsAdminResponse.bind(this)}
               fhirVersion={this.fhirVersion.toUpperCase()}
               smart={this.smart}
               renderButtons={this.renderButtons}
