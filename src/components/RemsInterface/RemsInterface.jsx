@@ -58,7 +58,7 @@ export default class RemsInterface extends Component {
         <div>
           <div className={"resource-entry etasu-container"}>
             <div className={"resource-entry-text"}  >{metReq.requirementName}</div>
-              <div className={"resource-entry-icon"}>{metReq.completed ? "✅"  : "❌"}</div>
+            <div className={"resource-entry-icon"}>{metReq.completed ? "✅" : "❌"}</div>
             <div className={"resource-entry-hover"}>{metReq.requirementDescription}</div>
           </div>
         </div>
@@ -80,14 +80,13 @@ export default class RemsInterface extends Component {
     }
     return null;
   }
-  
+
   async sendRemsMessage() {
-    const remsAdminResponse = await axios.post("http://localhost:8090/etasu/met", this.props.specialtyRxBundle, this.getAxiosOptions());
-    console.log(remsAdminResponse)    
+    const remsAdminResponse = this.props.remsAdminResponse
     this.setState({ remsAdminResponse });
-    
+
     //  Will not send post request to PIS if only for patient enrollment
-    if(this.state.remsAdminResponse?.data?.case_number){
+    if (this.state.remsAdminResponse?.data?.case_number) {
 
       // extract params and questionnaire response identifier
       let params = this.getResource(this.props.specialtyRxBundle, this.props.specialtyRxBundle.entry[0].resource.focus.parameters.reference);
@@ -106,13 +105,16 @@ export default class RemsInterface extends Component {
 
       // obtain drug information from database
       let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
-      let prescriptionDisplay = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
+      let simpleDrugName = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
+      let rxDate = presciption.authoredOn;
       let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
-      let patientName = patient.name[0].given[0] + ' ' + patient.name[0].family;
+      let patientFirstName = patient.name[0].given[0];
+      let patientLastName = patient.name[0].family;
+      let patientDOB = patient.birthDate;
 
-      // console.log(`http://localhost:5051/api/getRx/paitent/${patientName}/drug/${prescriptionDisplay}`);
+      // console.log(`http://localhost:5051/doctorOrders/api/getRx/${patientFirstName}/${patientLastName}/${patientDOB}?simpleDrugName=${simpleDrugName}&rxDate=${rxDate}`);
 
-      axios.get(`http://localhost:5051/doctorOrders/api/getRx/patient/${patientName}/drug/${prescriptionDisplay}`, remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
+      axios.get(`http://localhost:5051/doctorOrders/api/getRx/${patientFirstName}/${patientLastName}/${patientDOB}?simpleDrugName=${simpleDrugName}&rxDate=${rxDate}`, remsAdminResponse.data, this.getAxiosOptions()).then((response) => {
         this.setState({ response });
         console.log(response);
         console.log(response.data);
@@ -157,28 +159,31 @@ export default class RemsInterface extends Component {
 
   refreshPisBundle() {
     this.setState({ spinPis: true });
-    
+
     let params = this.getResource(this.props.specialtyRxBundle, this.props.specialtyRxBundle.entry[0].resource.focus.parameters.reference);
 
-      // stakeholder and medication references
-      let prescriptionReference = "";
-      let patientReference = "";
-      for (let param of params.parameter) {
-        if (param.name === "prescription") {
-          prescriptionReference = param.reference;
-        }
-        else if (param.name === "source-patient") {
-          patientReference = param.reference;
-        }
+    // stakeholder and medication references
+    let prescriptionReference = "";
+    let patientReference = "";
+    for (let param of params.parameter) {
+      if (param.name === "prescription") {
+        prescriptionReference = param.reference;
       }
+      else if (param.name === "source-patient") {
+        patientReference = param.reference;
+      }
+    }
 
-      // obtain drug information from database
-      let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
-      let prescriptionDisplay = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
-      let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
-      let patientName = patient.name[0].given[0] + ' ' + patient.name[0].family;
+    // obtain drug information from database
+    let presciption = this.getResource(this.props.specialtyRxBundle, prescriptionReference);
+    let simpleDrugName = presciption.medicationCodeableConcept.coding[0].display.split(" ")[0];
+    let rxDate = presciption.authoredOn;
+    let patient = this.getResource(this.props.specialtyRxBundle, patientReference);
+    let patientFirstName = patient.name[0].given[0];
+    let patientLastName = patient.name[0].family;
+    let patientDOB = patient.birthDate;
 
-    axios.get(`http://localhost:5051/doctorOrders/api/getRx/patient/${patientName}/drug/${prescriptionDisplay}`)
+    axios.get(`http://localhost:5051/doctorOrders/api/getRx/${patientFirstName}/${patientLastName}/${patientDOB}?simpleDrugName=${simpleDrugName}&rxDate=${rxDate}`)
     .then((response) => {
       this.setState({ response: response });
     })
@@ -212,14 +217,11 @@ export default class RemsInterface extends Component {
     }
 
     // Checking if REMS Request (pt enrollment) || Met Requirments (prescriber Form)
-    let hasRemsResponse = this.state.remsAdminResponse?.data ? true : false
     let hasRemsCase = this.state.remsAdminResponse?.data?.case_number ? true : false;
 
     return (
       <div>
-        {
-          hasRemsResponse ?
-          <div>
+        <div>
           {hasRemsCase ?
             <div>
               <div className="container left-form">
@@ -235,7 +237,7 @@ export default class RemsInterface extends Component {
                   <div className="bundle-entry">
                     <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
                     <Button variant="contained" onClick={this.toggleResponse}>View ETASU</Button>
-  
+
                     {this.state.remsAdminResponse?.data?.case_number ?
                       <AutorenewIcon
                         className={this.state.spin === true ? "refresh" : "renew-icon"}
@@ -244,9 +246,9 @@ export default class RemsInterface extends Component {
                       />
                       : ""
                     }
-  
+
                   </div>
-  
+
                 </Paper>
                 {this.state.viewResponse ?
                   <div className="bundle-view">
@@ -261,9 +263,9 @@ export default class RemsInterface extends Component {
                   <h3>Bundle</h3>
                   {this.renderBundle(this.props.specialtyRxBundle)}
                 </div> : ""}
-  
+
               </div>
-  
+
               <div className="right-form">
                 <h1>Pharmacy Status</h1>
                 <Paper style={{ paddingBottom: "5px" }}>
@@ -285,7 +287,7 @@ export default class RemsInterface extends Component {
                       : ""
                     }
                   </div>
-  
+
                 </Paper>
                 {this.state.viewPisBundle ? <div className="bundle-view">
                   <br></br>
@@ -305,7 +307,7 @@ export default class RemsInterface extends Component {
                   </div>
                   <div className="bundle-entry">
                     <Button variant="contained" onClick={this.toggleBundle}>View Bundle</Button>
-  
+
                     {this.state.remsAdminResponse?.data?.case_number ?
                       <AutorenewIcon
                         className={this.state.spin === true ? "refresh" : "renew-icon"}
@@ -315,24 +317,18 @@ export default class RemsInterface extends Component {
                       : ""
                     }
                   </div>
-  
+
                 </Paper>
                 {this.state.viewBundle ? <div className="bundle-view">
                   <br></br>
                   <h3>Bundle</h3>
                   {this.renderBundle(this.props.specialtyRxBundle)}
                 </div> : ""}
-  
+
               </div>
             </div>
           }
-          </div>
-          :
-          <div>
-            No response - form has already been submitted previously....
-          </div>
-        }
-
+        </div>
       </div>
     )
   }

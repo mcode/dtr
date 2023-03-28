@@ -8,6 +8,8 @@ import ConfigData from "../../config.json";
 import ReactDOM from 'react-dom'
 
 import retrieveQuestions, { buildNextQuestionRequest } from "../../util/retrieveQuestions";
+import axios from "axios";
+import AlertDialog from "./AlertDialog";
 
 // NOTE: need to append the right FHIR version to have valid profile URL
 var DTRQuestionnaireResponseURL = "http://hl7.org/fhir/us/davinci-dtr/StructureDefinition/dtr-questionnaireresponse-";
@@ -32,7 +34,8 @@ export default class QuestionnaireForm extends Component {
       popupOptions: [],
       popupFinalOption: "Cancel",
       formFilled: true,
-      formValidationErrors: []
+      formValidationErrors: [],
+      showRxAlert: {open: false}
     };
 
     this.outputResponse = this.outputResponse.bind(this);
@@ -1362,7 +1365,25 @@ export default class QuestionnaireForm extends Component {
 
 
         this.props.setPriorAuthClaim(priorAuthBundle);
-        this.props.setSpecialtyRxBundle(specialtyRxBundle);
+        const options = {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          }
+        }
+        axios.post("http://localhost:8090/etasu/met", specialtyRxBundle, options).then((response) => {
+          const proceedToRems = () => {
+            this.props.setSpecialtyRxBundle(specialtyRxBundle);
+            this.props.setRemsAdminResponse(response)
+          }
+          if(response.status == 201) {
+            proceedToRems()
+          } else if(response.status == 200) {
+            this.setState({showRxAlert: {response: response, rxBundle: specialtyRxBundle, description: "Form was already submitted previously. View current case?", open: true, callback: proceedToRems}})
+          }
+        }).catch((e)=>{
+          this.setState({showRxAlert: {description: "Encountered an error", open:true}})
+        })
       } else {
         alert("Prior Auth Bundle is not available or does not contain enough resources for Prior Auth. Can't submit to prior auth.")
       }
@@ -1564,6 +1585,7 @@ export default class QuestionnaireForm extends Component {
             />
             ) : null
           }
+          <AlertDialog title="Alert" rxAlert={this.state.showRxAlert} setRxAlert={(e)=>{this.setState({showRxAlert: e})}}></AlertDialog>
           {
             isAdaptiveForm ? (
               <div className="form-message-panel">
