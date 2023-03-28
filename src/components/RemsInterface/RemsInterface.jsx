@@ -86,7 +86,7 @@ export default class RemsInterface extends Component {
     this.setState({ remsAdminResponse });
 
     //  Will not send post request to PIS if only for patient enrollment
-    if (this.state.remsAdminResponse?.data?.case_number) {
+    if (remsAdminResponse?.data?.case_number) {
 
       // extract params and questionnaire response identifier
       let params = this.getResource(this.props.specialtyRxBundle, this.props.specialtyRxBundle.entry[0].resource.focus.parameters.reference);
